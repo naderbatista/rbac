@@ -56,13 +56,13 @@ func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token ausente"})
 			return
 		}
 
 		userID, err := parseToken(strings.TrimPrefix(header, "Bearer "))
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token inválido"})
 			return
 		}
 
@@ -76,7 +76,20 @@ func RequirePermission(store *Store, perm string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetString("userID")
 		if !store.UserHasPermission(userID, perm) {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "acesso negado"})
+			return
+		}
+		c.Next()
+	}
+}
+
+// RequireABAC evaluates attribute-based policies attached to the user's roles.
+func RequireABAC(store *Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.GetString("userID")
+		ok, reason := store.EvaluateABAC(userID, c.ClientIP(), time.Now())
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": reason})
 			return
 		}
 		c.Next()

@@ -1,38 +1,37 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../services/api";
-
-const AuthContext = createContext(null);
+import { AuthContext } from "./authContext";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [policies, setPolicies] = useState([]);
+  const [loading, setLoading] = useState(() => !!localStorage.getItem("token"));
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    if (!loading) return;
     api.me()
       .then((data) => {
         setUser(data.user);
         setPermissions(data.permissions || []);
+        setPolicies(data.policies || []);
       })
       .catch(() => localStorage.removeItem("token"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [loading]);
 
-  function login(token, userData, perms) {
+  function login(token, userData, perms, pols) {
     localStorage.setItem("token", token);
     setUser(userData);
     setPermissions(perms || []);
+    setPolicies(pols || []);
   }
 
   function logout() {
     localStorage.removeItem("token");
     setUser(null);
     setPermissions([]);
+    setPolicies([]);
   }
 
   function hasPerm(perm) {
@@ -42,14 +41,8 @@ export function AuthProvider({ children }) {
   if (loading) return null;
 
   return (
-    <AuthContext.Provider value={{ user, permissions, login, logout, hasPerm }}>
+    <AuthContext.Provider value={{ user, permissions, policies, login, logout, hasPerm }}>
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be inside AuthProvider");
-  return ctx;
 }

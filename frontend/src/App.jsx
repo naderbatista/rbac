@@ -1,11 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext.jsx";
+import { useAuth } from "./context/useAuth";
 import Nav from "./components/Nav";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
 import Roles from "./pages/Roles";
 import Permissions from "./pages/Permissions";
+import Policies from "./pages/Policies";
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -31,6 +33,7 @@ function AppRoutes() {
       <Route path="/users" element={<PrivateRoute><Layout><Users /></Layout></PrivateRoute>} />
       <Route path="/roles" element={<PrivateRoute><Layout><Roles /></Layout></PrivateRoute>} />
       <Route path="/permissions" element={<PrivateRoute><Layout><Permissions /></Layout></PrivateRoute>} />
+      <Route path="/policies" element={<PrivateRoute><Layout><Policies /></Layout></PrivateRoute>} />
     </Routes>
   );
 }

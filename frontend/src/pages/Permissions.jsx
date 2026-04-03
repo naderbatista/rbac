@@ -1,16 +1,12 @@
 import { useState, useEffect } from "react";
 import { api } from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 export default function Permissions() {
   const { hasPerm } = useAuth();
   const [permissions, setPermissions] = useState([]);
   const [name, setName] = useState("");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    load();
-  }, []);
 
   async function load() {
     try {
@@ -19,6 +15,14 @@ export default function Permissions() {
       setError(err.message);
     }
   }
+
+  useEffect(() => {
+    let cancel = false;
+    api.listPermissions()
+      .then((p) => { if (!cancel) setPermissions(p); })
+      .catch((err) => { if (!cancel) setError(err.message); });
+    return () => { cancel = true; };
+  }, []);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -34,20 +38,20 @@ export default function Permissions() {
 
   return (
     <div>
-      <h2>Permissions</h2>
+      <h2>Permissões</h2>
       {error && <p className="error">{error}</p>}
 
       {hasPerm("role:write") && (
         <form onSubmit={handleCreate} className="inline-form">
-          <input placeholder="e.g. post:delete" value={name} onChange={(e) => setName(e.target.value)} required />
-          <button type="submit">Create permission</button>
+          <input placeholder="ex: post:delete" value={name} onChange={(e) => setName(e.target.value)} required />
+          <button type="submit">Criar permissão</button>
         </form>
       )}
 
       <table>
         <thead>
           <tr>
-            <th>Name</th>
+            <th>Nome</th>
             <th>ID</th>
           </tr>
         </thead>

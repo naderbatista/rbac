@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 export default function Users() {
   const { hasPerm } = useAuth();
@@ -9,10 +9,6 @@ export default function Users() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    load();
-  }, []);
 
   async function load() {
     try {
@@ -23,6 +19,14 @@ export default function Users() {
       setError(err.message);
     }
   }
+
+  useEffect(() => {
+    let cancel = false;
+    Promise.all([api.listUsers(), api.listRoles()])
+      .then(([u, r]) => { if (!cancel) { setUsers(u); setRoles(r); } })
+      .catch((err) => { if (!cancel) setError(err.message); });
+    return () => { cancel = true; };
+  }, []);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -57,23 +61,23 @@ export default function Users() {
 
   return (
     <div>
-      <h2>Users</h2>
+      <h2>Usuários</h2>
       {error && <p className="error">{error}</p>}
 
       {hasPerm("user:write") && (
         <form onSubmit={handleCreate} className="inline-form">
-          <input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          <button type="submit">Create user</button>
+          <input placeholder="Usuário" value={username} onChange={(e) => setUsername(e.target.value)} required />
+          <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <button type="submit">Criar usuário</button>
         </form>
       )}
 
       <table>
         <thead>
           <tr>
-            <th>Username</th>
-            <th>Roles</th>
-            {hasPerm("role:write") && <th>Toggle role</th>}
+            <th>Usuário</th>
+            <th>Perfis</th>
+            {hasPerm("role:write") && <th>Alternar perfil</th>}
           </tr>
         </thead>
         <tbody>

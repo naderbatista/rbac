@@ -25,13 +25,13 @@ func (h *Handlers) Login(c *gin.Context) {
 
 	user, ok := h.store.FindUserByUsername(req.Username)
 	if !ok || user.Password != req.Password {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "credenciais inválidas"})
 		return
 	}
 
 	token, err := GenerateToken(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao gerar token"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"token": token})
@@ -41,13 +41,14 @@ func (h *Handlers) Me(c *gin.Context) {
 	userID := c.GetString("userID")
 	user, ok := h.store.GetUser(userID)
 	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "usuário não encontrado"})
 		return
 	}
 	user.Password = ""
 	c.JSON(http.StatusOK, gin.H{
 		"user":        user,
 		"permissions": h.store.UserPermissionNames(userID),
+		"policies":    h.store.UserPolicies(userID),
 	})
 }
 
@@ -73,7 +74,7 @@ func (h *Handlers) CreateUser(c *gin.Context) {
 	}
 
 	if _, exists := h.store.FindUserByUsername(body.Username); exists {
-		c.JSON(http.StatusConflict, gin.H{"error": "username taken"})
+		c.JSON(http.StatusConflict, gin.H{"error": "nome de usuário já existe"})
 		return
 	}
 
@@ -83,18 +84,24 @@ func (h *Handlers) CreateUser(c *gin.Context) {
 }
 
 func (h *Handlers) AssignRoles(c *gin.Context) {
+	targetID := c.Param("id")
+	if targetID == c.GetString("userID") {
+		c.JSON(http.StatusForbidden, gin.H{"error": "não é possível modificar seus próprios perfis"})
+		return
+	}
+
 	var req AssignRolesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := h.store.AssignRoles(c.Param("id"), req.RoleIDs); err != nil {
+	if err := h.store.AssignRoles(targetID, req.RoleIDs); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "roles assigned"})
+	c.JSON(http.StatusOK, gin.H{"status": "perfis atribuídos"})
 }
 
 // --- Roles ---
@@ -115,18 +122,26 @@ func (h *Handlers) CreateRole(c *gin.Context) {
 }
 
 func (h *Handlers) AssignPermissions(c *gin.Context) {
+	roleID := c.Param("id")
 	var req AssignPermissionsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := h.store.AssignPermissions(c.Param("id"), req.PermissionIDs); err != nil {
+	if len(req.PermissionIDs) == 0 {
+		if role, ok := h.store.GetRole(roleID); ok && role.Name == "admin" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "não é possível remover todas as permissões do perfil admin"})
+			return
+		}
+	}
+
+	if err := h.store.AssignPermissions(roleID, req.PermissionIDs); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "permissions assigned"})
+	c.JSON(http.StatusOK, gin.H{"status": "permissões atribuídas"})
 }
 
 // --- Permissions ---
@@ -144,4 +159,40 @@ func (h *Handlers) CreatePermission(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, h.store.CreatePermission(body.Name))
+}
+
+// --- Policies (ABAC) ---
+
+func (h *Handlers) ListPolicies(c *gin.Context) {
+	c.JSON(http.StatusOK, h.store.ListPolicies())
+}
+
+func (h *Handlers) CreatePolicyHandler(c *gin.Context) {
+	var body struct {
+		Name  string `json:"name" binding:"required"`
+		Type  string `json:"type" binding:"required"`
+		Value string `json:"value" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if body.Type != "horario" && body.Type != "ip" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tipo deve ser 'horario' ou 'ip'"})
+		return
+	}
+	c.JSON(http.StatusCreated, h.store.CreatePolicy(body.Name, body.Type, body.Value))
+}
+
+func (h *Handlers) AssignPolicies(c *gin.Context) {
+	var req AssignPoliciesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.store.AssignPolicies(c.Param("id"), req.PolicyIDs); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "políticas atribuídas"})
 }

@@ -19,7 +19,7 @@ async function request(method, path, body) {
     return;
   }
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "request failed");
+  if (!res.ok) throw new Error(data.error || "falha na requisição");
   return data;
 }
 
@@ -37,4 +37,8 @@ export const api = {
 
   listPermissions: () => request("GET", "/api/permissions"),
   createPermission: (name) => request("POST", "/api/permissions", { name }),
+
+  listPolicies: () => request("GET", "/api/policies"),
+  createPolicy: (name, type, value) => request("POST", "/api/policies", { name, type, value }),
+  assignPolicies: (roleId, policyIds) => request("PUT", `/api/roles/${roleId}/policies`, { policy_ids: policyIds }),
 };
