@@ -16,6 +16,26 @@ Sistema híbrido de controle de acesso que combina **RBAC** (Controle de Acesso 
 
 Se um perfil **não** possui políticas ABAC, o acesso é irrestrito por atributos (apenas RBAC é avaliado). Se possui, **todas** as políticas devem ser satisfeitas.
 
+## Capturas de Tela
+
+### Login
+![Login](login.png)
+
+### Painel (Área Logada)
+![Painel](area_logada.png)
+
+### Usuários
+![Usuários](usuarios.png)
+
+### Perfis
+![Perfis](perfis.png)
+
+### Permissões
+![Permissões](permissoes.png)
+
+### Políticas ABAC
+![Políticas ABAC](politicas-abac.png)
+
 ## Estrutura do Projeto
 
 ```
