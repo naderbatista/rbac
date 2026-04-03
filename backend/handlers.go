@@ -37,6 +37,20 @@ func (h *Handlers) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 
+func (h *Handlers) Me(c *gin.Context) {
+	userID := c.GetString("userID")
+	user, ok := h.store.GetUser(userID)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+	user.Password = ""
+	c.JSON(http.StatusOK, gin.H{
+		"user":        user,
+		"permissions": h.store.UserPermissionNames(userID),
+	})
+}
+
 // --- Users ---
 
 func (h *Handlers) ListUsers(c *gin.Context) {

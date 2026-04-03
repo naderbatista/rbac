@@ -37,6 +37,20 @@ func parseToken(raw string) (string, error) {
 	return sub, err
 }
 
+// CORS allows requests from the frontend dev server.
+func CORS() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Authorization,Content-Type")
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	}
+}
+
 // Auth extracts and validates the JWT from the Authorization header.
 func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -5,3 +5,7 @@
 *.dylib
 *.test
 *.out
+
+# frontend
+node_modules/
+dist/

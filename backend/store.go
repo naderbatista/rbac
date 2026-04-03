@@ -181,6 +181,32 @@ func (s *Store) ListPermissions() []Permission {
 	return out
 }
 
+// UserPermissionNames returns all resolved permission names for a user.
+func (s *Store) UserPermissionNames(userID string) []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	u, ok := s.users[userID]
+	if !ok {
+		return nil
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, rid := range u.Roles {
+		role, ok := s.roles[rid]
+		if !ok {
+			continue
+		}
+		for _, pid := range role.Permissions {
+			if perm, ok := s.permissions[pid]; ok && !seen[perm.Name] {
+				seen[perm.Name] = true
+				out = append(out, perm.Name)
+			}
+		}
+	}
+	return out
+}
+
 // UserHasPermission resolves the full chain: user -> roles -> permissions.
 func (s *Store) UserHasPermission(userID, permName string) bool {
 	s.mu.RLock()

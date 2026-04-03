@@ -11,11 +11,13 @@ func main() {
 	h := NewHandlers(store)
 
 	r := gin.Default()
+	r.Use(CORS())
 
 	r.POST("/login", h.Login)
 
 	api := r.Group("/api", Auth())
 	{
+		api.GET("/me", h.Me)
 		users := api.Group("/users")
 		users.GET("", RequirePermission(store, "user:read"), h.ListUsers)
 		users.POST("", RequirePermission(store, "user:write"), h.CreateUser)

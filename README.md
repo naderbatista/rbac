@@ -1,14 +1,34 @@
-# RBAC System in Go
+# RBAC System
 
-Minimal Role-Based Access Control API built with Gin.
+Minimal Role-Based Access Control system with a Go/Gin backend and React/Vite frontend.
+
+## Project Structure
+
+```
+backend/   — Go API (Gin, JWT, in-memory storage)
+frontend/  — React SPA (Vite, plain CSS)
+```
 
 ## Running
 
+### Backend
+
 ```bash
+cd backend
 go run .
 ```
 
-Server starts on `:8080`.
+API starts on `http://localhost:8080`.
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Opens on `http://localhost:5173`.
 
 ## Seed Data
 
